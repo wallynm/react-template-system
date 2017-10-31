@@ -16,7 +16,7 @@ entryPoints.main  ='./src/main.js';
 
 console.info(entryPoints)
 const extractSass = new ExtractTextPlugin({
-    filename: "css/[name].css",
+    filename: "[name].css",
     disable: process.env.NODE_ENV === "development"
 });
 
@@ -38,7 +38,8 @@ const browserConfig = {
     entry: entryPoints,
     output: {
       path: `${__dirname}/.build/`,
-      filename: "js/[name].js"
+      filename: "[name].js",
+      sourceMapFilename: 'map/[file].map'      
     },
     devtool: "cheap-module-source-map",
     resolve: {
@@ -71,7 +72,7 @@ const browserConfig = {
                   importLoaders: 2,
                   modules: false,
                   url: true,
-                  sourceMap: false,
+                  sourceMap: true,
                   minimize: true,
                   localIdentName: false
                     ? '[name]-[local]-[hash:base64:5]'
