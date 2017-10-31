@@ -1,23 +1,33 @@
 const path = require('path');
+const fs = require('fs')
+
 const webpack = require('webpack');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const BundleAnalyzer = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const entryPoints = {};
+const dirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isDirectory())
 
+
+// Loop entry points
+dirs(`${__dirname}/src/templates`).map(entry => entryPoints[`templates/${entry}`] =  `${__dirname}/src/templates/${entry}/index.js`) 
+
+// Sets default entry point
+entryPoints.main  ='./src/main.js';
+
+console.info(entryPoints)
 const extractSass = new ExtractTextPlugin({
-    filename: "public/css/[name].css",
+    filename: "css/[name].css",
     disable: process.env.NODE_ENV === "development"
 });
 
-const videoJsProvider = new webpack.ProvidePlugin({
-  'videojs': 'video.js',
-  'window.videojs': 'video.js',
-});
-
-const bundleAnalyzer = new BundleAnalyzer;
+const extractCommons = new webpack.optimize.CommonsChunkPlugin({
+  name: 'commons',
+  filename: 'commons.js'
+})
 
 const plugins = [
   extractSass,
-  // bundleAnalyzer
+  extractCommons
 ];
 
 const browserConfig = {
@@ -25,29 +35,30 @@ const browserConfig = {
       historyApiFallback: true,
       disableHostCheck: true
     },
-    entry: "./src/main.js",
+    entry: entryPoints,
     output: {
-      path: __dirname,
-      filename: "./public/bundle.js"
+      path: `${__dirname}/.build/`,
+      filename: "js/[name].js"
     },
     devtool: "cheap-module-source-map",
     resolve: {
       modules: [
         "node_modules",
         __dirname + "/src"
-      ],
-      alias: {
-        'videojs-contrib-hls': 'videojs-contrib-hls/dist/videojs-contrib-hls',
-      }
+      ]
     },
     module: {
-      rules: [
+        rules: [
+        {
+          test: /\.bundle\.js$/,
+          use: 'bundle-loader'
+        },
         {
           test: [/\.svg$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
           loader: "file-loader",
           options: {
-            name: "public/media/[name].[ext]",
-            publicPath: url => url.replace(/public/, "")
+            name: "./.build/media/[name].[ext]",
+            publicPath: url => url.replace(/.build/, "")
           }
         },
         {
