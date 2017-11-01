@@ -39,7 +39,7 @@ const browserConfig = {
     output: {
       path: `${__dirname}/.build/`,
       filename: "[name].js",
-      sourceMapFilename: 'map/[file].map'      
+      sourceMapFilename: 'map/[file].map'
     },
     devtool: "cheap-module-source-map",
     resolve: {

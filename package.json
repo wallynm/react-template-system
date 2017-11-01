@@ -5,7 +5,7 @@
   "main": "index.html",
   "scripts": {
     "start": "webpack-dev-server --progress --colors --hot --inline",
-    "start:prod": "webpack-dev-server --config ./webpack.config.prod.js  --progress --colors",
+    "start:prod": "webpack-dev-server --config ./webpack.config.js  --progress --colors",
     "prod": "webpack --config ./webpack.config.js  --progress --colors"
   },
   "author": "srinivasan",
