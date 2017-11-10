@@ -9,15 +9,12 @@ const dirs = p => fs.readdirSync(p).filter(f => fs.statSync(path.join(p, f)).isD
 
 
 // Loop entry points
-dirs(`${__dirname}/src/templates`).map(entry => entryPoints[`templates/${entry}`] =  `${__dirname}/src/templates/${entry}/index.js`) 
+dirs(`${__dirname}/src/templates`).map(entry => entryPoints[`templates/${entry}`] = `${__dirname}/src/templates/${entry}/index.scss`)
 
-// Sets default entry point
-entryPoints.main  ='./src/main.js';
 
-console.info(entryPoints)
 const extractSass = new ExtractTextPlugin({
-    filename: "[name].css",
-    disable: process.env.NODE_ENV === "development"
+  filename: "[name].css",
+  disable: process.env.NODE_ENV === "development"
 });
 
 const extractCommons = new webpack.optimize.CommonsChunkPlugin({
@@ -25,82 +22,103 @@ const extractCommons = new webpack.optimize.CommonsChunkPlugin({
   filename: 'commons.js'
 })
 
+const genericModules = {
+  rules: [
+    {
+      test: [/\.svg$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
+      loader: "file-loader",
+      options: {
+        name: "./.build/media/[name].[ext]",
+        publicPath: url => url.replace(/.build/, "")
+      }
+    },
+    {
+      test: /\.s(a|c)ss$/,
+      use: ['css-hot-loader'].concat(ExtractTextPlugin.extract({
+        use: [
+          {
+            loader: 'css-loader',
+            options: {
+              importLoaders: 2,
+              modules: false,
+              url: true,
+              sourceMap: true,
+              minimize: true,
+              localIdentName: false
+              ? '[name]-[local]-[hash:base64:5]'
+              : '[hash:base64:5]'
+            }
+          },
+          { loader: 'sass-loader' },
+          { loader: 'postcss-loader' }
+        ]
+      }))
+    },
+    {
+      test: /\.woff($|\?)|\.woff2($|\?)|\.ttf($|\?)|\.eot($|\?)|\.svg($|\?)/,
+      use: 'url-loader'
+    },
+  ]
+};
+
+const jsonLoader = {
+  test: /\.json$/,
+  loader: 'json-loader',
+  exclude: /(node_modules)/,        
+}
+
+const babelLoader = {
+  test: /js$/,
+  exclude: /(node_modules)/,
+  loader: "babel-loader"
+};
+
+const appModules = genericModules;
+appModules.rules.push(jsonLoader);
+appModules.rules.push(babelLoader);
+
+
 const plugins = [
-  extractSass,
-  extractCommons
+  extractSass
+  // ,extractCommons
 ];
 
-const browserConfig = {
-    devServer: { 
-      historyApiFallback: true,
-      disableHostCheck: true
-    },
-    entry: entryPoints,
-    output: {
-      path: `${__dirname}/.build/`,
-      filename: "[name].js",
-      sourceMapFilename: 'map/[file].map'      
-    },
-    devtool: "cheap-module-source-map",
-    resolve: {
-      modules: [
-        "node_modules",
-        __dirname + "/src"
-      ]
-    },
-    module: {
-        rules: [
-        {
-          test: /\.bundle\.js$/,
-          use: 'bundle-loader'
-        },
-        {
-          test: [/\.svg$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
-          loader: "file-loader",
-          options: {
-            name: "./.build/media/[name].[ext]",
-            publicPath: url => url.replace(/.build/, "")
-          }
-        },
-        {
-          test: /\.s(a|c)ss$/,
-            use: ['css-hot-loader'].concat(ExtractTextPlugin.extract({
-            use: [
-              {
-                loader: 'css-loader',
-                options: {
-                  importLoaders: 2,
-                  modules: false,
-                  url: true,
-                  sourceMap: true,
-                  minimize: true,
-                  localIdentName: false
-                    ? '[name]-[local]-[hash:base64:5]'
-                    : '[hash:base64:5]'
-                }
-              },
-              { loader: 'sass-loader' },
-              { loader: 'postcss-loader' }
-            ]
-          }))
-        },
-        {
-          test: /\.json$/,
-          loader: 'json-loader',
-          exclude: /(node_modules)/,        
-        },
-        {
-          test: /js$/,
-          exclude: /(node_modules)/,
-          loader: "babel-loader"
-        },
-        {
-          test: /\.woff($|\?)|\.woff2($|\?)|\.ttf($|\?)|\.eot($|\?)|\.svg($|\?)/,
-          use: 'url-loader'
-        },
-      ]
-    },
-    plugins: plugins
-  };
+const cssConfig = {
+  entry: entryPoints,
+  output: {
+    path: `${__dirname}/.build/`,
+    // filename: "[name].bundle.js",
+    sourceMapFilename: 'map/[file].map',
+    publicPath: '/.build/',
+    // chunkFilename : 'template.[id].js',
+    filename: '[name].css'
+  },
+  module: genericModules,
+  plugins: plugins  
+}
 
-  module.exports = browserConfig;
+const browserConfig = {
+  devServer: {
+    historyApiFallback: true,
+    disableHostCheck: true
+  },
+  entry: './src/main.js',
+  output: {
+    path: `${__dirname}/.build/`,
+    sourceMapFilename: 'map/[file].map',
+    publicPath: '/.build/',
+    filename: '[name].js',
+    chunkFilename: 'templates/[name].js'
+  },
+  devtool: "cheap-module-source-map",
+  resolve: {
+    modules: [
+      "node_modules",
+      __dirname + "/src"
+    ]
+  },
+  module: appModules,
+  plugins: plugins
+};
+
+module.exports = [browserConfig, cssConfig];
